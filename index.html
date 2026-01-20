@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SQUARE TIC-TAC-TOE</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+
+        :root {
+            --bg-o: #E3F2FD;
+            --bg-x: #FFEBEE;
+            --primary: #1565C0;
+            --secondary: #C62828;
+            --dark: #212121;
+            --light: #FFFFFF;
+            --border: #333;
+            /* 테두리 더 진하게 */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--bg-o);
+            transition: background-color 0.4s ease;
+            overflow: hidden;
+            color: var(--dark);
+        }
+
+        body.turn-x {
+            background-color: var(--bg-x);
+        }
+
+        .container {
+            background: var(--light);
+            padding: 3rem 2rem;
+            box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
+            /* 그림자 대신 두께감 */
+            text-align: center;
+            width: 100%;
+            max-width: 380px;
+            position: relative;
+            border: 3px solid var(--dark);
+            /* 외곽선 매우 진하게 */
+        }
+
+        h1 {
+            font-weight: 900;
+            letter-spacing: -1px;
+            margin-bottom: 2rem;
+            font-size: 2.2rem;
+            text-transform: uppercase;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 16px;
+            font-size: 20px;
+            text-align: center;
+            border: 3px solid var(--dark);
+            background: #F5F5F5;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+            font-family: inherit;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            background: #fff;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: 3px solid var(--dark);
+            background: var(--dark);
+            color: white;
+            font-size: 18px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.1s;
+            font-family: inherit;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+
+        .btn:active {
+            transform: translateY(2px);
+        }
+
+        .btn-outline {
+            background: white;
+            color: var(--dark);
+        }
+
+        .btn-outline:hover {
+            background: #eee;
+        }
+
+        .divider {
+            margin: 20px 0;
+            font-size: 14px;
+            font-weight: 800;
+            color: #bbb;
+            display: flex;
+            align-items: center;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: "";
+            flex: 1;
+            height: 2px;
+            background: #eee;
+        }
+
+        .divider::before {
+            margin-right: 10px;
+        }
+
+        .divider::after {
+            margin-left: 10px;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            border-bottom: 3px solid var(--dark);
+            padding-bottom: 15px;
+        }
+
+        .exit-btn {
+            background: var(--light);
+            color: var(--dark);
+            padding: 8px 16px;
+            font-size: 14px;
+            width: auto;
+            margin: 0;
+            border: 2px solid var(--dark);
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .room-code {
+            font-weight: 800;
+            font-size: 1.2rem;
+        }
+
+        #status-message {
+            font-size: 1.3rem;
+            font-weight: 800;
+            min-height: 1.5rem;
+            margin-top: 10px;
+        }
+
+        #turn-indicator {
+            font-size: 1rem;
+            color: #666;
+            margin-bottom: 25px;
+            font-weight: 600;
+            min-height: 1rem;
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0;
+            margin: 0 auto;
+            border: 4px solid var(--dark);
+            width: fit-content;
+        }
+
+        .cell {
+            width: 90px;
+            height: 90px;
+            background: var(--light);
+            border: 2px solid var(--dark);
+            /* 안쪽 선 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 3rem;
+            /* 텍스트 fallback */
+        }
+
+        .cell:hover {
+            background: #f0f0f0;
+        }
+
+        /* 이미지 크기 조정 */
+        .cell img {
+            width: 70%;
+            height: 70%;
+            object-fit: contain;
+            pointer-events: none;
+            display: block;
+        }
+
+        /* 모바일 대응 */
+        @media (max-width: 400px) {
+            .cell {
+                width: 80px;
+                height: 80px;
+            }
+        }
+
+        #result-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            display: none;
+        }
+
+        #result-text {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div id="lobby-view">
+            <h1>Tic-Tac-Toe</h1>
+            <input type="text" id="roomCodeInput" placeholder="CODE (4 Digits)" maxlength="4" inputmode="numeric"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+            <button class="btn" onclick="joinRoom()">JOIN GAME</button>
+            <div class="divider">OR</div>
+            <button class="btn btn-outline" onclick="createRoom()">CREATE NEW ROOM</button>
+        </div>
+
+        <div id="game-view" style="display: none;">
+            <div class="game-header">
+                <button class="exit-btn" onclick="exitRoom()">나가기</button>
+                <span class="room-code">CODE: <span id="displayRoomCode">----</span></span>
+            </div>
+
+            <div id="status-message">상대방을 기다리는중..</div>
+            <div id="turn-indicator"></div>
+
+            <div id="board">
+                <div class="cell" onclick="handleCellClick(0)"></div>
+                <div class="cell" onclick="handleCellClick(1)"></div>
+                <div class="cell" onclick="handleCellClick(2)"></div>
+                <div class="cell" onclick="handleCellClick(3)"></div>
+                <div class="cell" onclick="handleCellClick(4)"></div>
+                <div class="cell" onclick="handleCellClick(5)"></div>
+                <div class="cell" onclick="handleCellClick(6)"></div>
+                <div class="cell" onclick="handleCellClick(7)"></div>
+                <div class="cell" onclick="handleCellClick(8)"></div>
+            </div>
+
+            <div id="result-overlay">
+                <div id="result-text">WINNER</div>
+                <button class="btn" style="width: auto; padding: 15px 50px;" onclick="resetGameBtn()">다시하기</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+
+    <script>
+        // ==========================================
+        // [필수] 파이어베이스 설정을 본인 것으로 교체하세요
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyBTJwvP-2FCkepLajsoDk_w2BxZiyCr7xU",
+            authDomain: "tic-tac-toe-7c13e.firebaseapp.com",
+            databaseURL: "https://tic-tac-toe-7c13e-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "tic-tac-toe-7c13e",
+            storageBucket: "tic-tac-toe-7c13e.firebasestorage.app",
+            messagingSenderId: "135382913784",
+            appId: "1:135382913784:web:515b3947d97776f20ce10d",
+            measurementId: "G-TERWY12ZPB"
+        };
+
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let roomCode = null;
+        let myRole = null;
+        let mySymbol = null;
+        let currentTurn = 'O';
+        let isGameActive = false;
+        // [중요 수정] null 대신 빈 문자열("") 사용. Firebase 배열 오류 방지.
+        let boardState = ["", "", "", "", "", "", "", "", ""];
+        let roomRef = null;
+
+        // 1. 방 만들기
+        function createRoom() {
+            const code = Math.floor(1000 + Math.random() * 9000).toString();
+            roomCode = code;
+            myRole = 'host';
+
+            roomRef = db.ref(`rooms/${code}`);
+
+            // 데이터 초기화 (빈 문자열 사용)
+            roomRef.set({
+                board: ["", "", "", "", "", "", "", "", ""],
+                turn: 'O',
+                status: 'waiting',
+                p1: true,
+                p2: false,
+                hostIsO: true
+            }).then(() => {
+                enterGameUI();
+            });
+
+            roomRef.onDisconnect().remove();
+        }
+
+        // 2. 방 입장
+        function joinRoom() {
+            const input = document.getElementById('roomCodeInput');
+            const code = input.value;
+            if (code.length !== 4) return alert("4자리 코드를 입력하세요.");
+
+            roomCode = code;
+            roomRef = db.ref(`rooms/${code}`);
+
+            roomRef.once('value', (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return alert("없는 방입니다.");
+                if (data.p2) return alert("방이 꽉 찼습니다.");
+
+                myRole = 'guest';
+                const isHostO = Math.random() < 0.5; // 50% 확률
+
+                roomRef.update({
+                    p2: true,
+                    status: 'playing',
+                    hostIsO: isHostO
+                }).then(() => {
+                    enterGameUI();
+                });
+
+                roomRef.onDisconnect().update({ p2: false });
+            });
+        }
+
+        // 3. 게임 화면 진입
+        function enterGameUI() {
+            document.getElementById('lobby-view').style.display = 'none';
+            document.getElementById('game-view').style.display = 'block';
+            document.getElementById('displayRoomCode').innerText = roomCode;
+            roomRef.on('value', onGameUpdate);
+        }
+
+        // 4. 데이터 업데이트 (수정됨)
+        function onGameUpdate(snapshot) {
+            const data = snapshot.val();
+
+            if (!data) {
+                alert("종료되었습니다.");
+                window.location.reload();
+                return;
+            }
+
+            if (data.status === 'playing' && (!data.p1 || !data.p2)) {
+                alert("상대방이 나갔습니다.");
+                roomRef.remove();
+                window.location.reload();
+                return;
+            }
+
+            // 내 기호(O/X) 확인
+            if (data.status === 'playing' || data.status === 'finished') {
+                if (myRole === 'host') {
+                    mySymbol = data.hostIsO ? 'O' : 'X';
+                } else {
+                    mySymbol = data.hostIsO ? 'X' : 'O';
+                }
+            }
+
+            // [중요 수정] Firebase에서 배열이 객체로 변환되어 올 경우를 대비해 안전하게 파싱
+            if (data.board) {
+                boardState = Array.isArray(data.board) ? data.board : Object.values(data.board);
+                // 혹시 길이가 9보다 작아졌을 경우(뒷부분이 비어서) 채워줌
+                while (boardState.length < 9) boardState.push("");
+            } else {
+                boardState = ["", "", "", "", "", "", "", "", ""];
+            }
+
+            currentTurn = data.turn;
+            isGameActive = (data.status === 'playing');
+
+            renderBoard();
+            updateStatusText(data);
+
+            if (data.status === 'finished') {
+                showResult(data.winner);
+            } else {
+                document.getElementById('result-overlay').style.display = 'none';
+            }
+        }
+
+        // 5. 렌더링 (수정됨)
+        function renderBoard() {
+            document.body.className = currentTurn === 'O' ? '' : 'turn-x';
+
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach((cell, i) => {
+                cell.innerHTML = '';
+                cell.className = 'cell';
+
+                // 빈 문자열("")이 아닐 때만 이미지 표시
+                if (boardState[i] && boardState[i] !== "") {
+                    cell.classList.add('taken');
+                    const img = document.createElement('img');
+                    img.src = boardState[i] === 'O' ? 'tictactoe_O.png' : 'tictactoe_X.png';
+                    cell.appendChild(img);
+                }
+            });
+        }
+
+        function updateStatusText(data) {
+            const statusEl = document.getElementById('status-message');
+            const turnEl = document.getElementById('turn-indicator');
+
+            if (data.status === 'waiting') {
+                statusEl.innerText = "WAITING FOR OPPONENT...";
+                statusEl.style.color = "#999";
+                turnEl.innerText = "";
+            } else if (data.status === 'playing') {
+                turnEl.innerText = `YOU ARE '${mySymbol}'`;
+
+                if (currentTurn === mySymbol) {
+                    statusEl.innerText = "YOUR TURN!";
+                    statusEl.style.color = "var(--dark)";
+                } else {
+                    statusEl.innerText = "OPPONENT'S TURN...";
+                    statusEl.style.color = "#999";
+                }
+            }
+        }
+
+        // 6. 클릭 이벤트 (수정됨)
+        function handleCellClick(index) {
+            if (!isGameActive) return;
+            // 빈 문자열이 아니면 이미 둔 곳
+            if (boardState[index] !== "") return;
+            if (currentTurn !== mySymbol) return;
+
+            // 로컬 선반영
+            boardState[index] = mySymbol;
+            const nextTurn = mySymbol === 'O' ? 'X' : 'O';
+
+            let winner = null;
+            let nextStatus = 'playing';
+
+            const win = checkWin(boardState);
+            if (win) {
+                winner = win;
+                nextStatus = 'finished';
+            } else if (!boardState.includes("")) { // 빈칸("")이 없으면 무승부
+                winner = 'draw';
+                nextStatus = 'finished';
+            }
+
+            roomRef.update({
+                board: boardState,
+                turn: nextTurn,
+                status: nextStatus,
+                winner: winner
+            });
+        }
+
+        function checkWin(board) {
+            const lines = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                [0, 4, 8], [2, 4, 6]
+            ];
+            for (let [a, b, c] of lines) {
+                // 빈 문자열이 아니고 셋 다 같으면 승리
+                if (board[a] !== "" && board[a] === board[b] && board[a] === board[c]) {
+                    return board[a];
+                }
+            }
+            return null;
+        }
+
+        function showResult(winner) {
+            const overlay = document.getElementById('result-overlay');
+            const text = document.getElementById('result-text');
+
+            overlay.style.display = 'flex';
+            if (winner === 'draw') {
+                text.innerText = "DRAW";
+                text.style.color = "#333";
+            } else {
+                text.innerText = `${winner} WINS!`;
+                text.style.color = winner === 'O' ? "var(--primary)" : "var(--secondary)";
+                fireConfetti();
+            }
+        }
+
+        function resetGameBtn() {
+            roomRef.update({
+                board: ["", "", "", "", "", "", "", "", ""], // 초기화 시에도 빈 문자열 배열 사용
+                turn: 'O',
+                status: 'playing',
+                winner: null
+            });
+        }
+
+        function exitRoom() {
+            if (confirm("EXIT GAME?")) {
+                if (roomRef) roomRef.remove();
+                window.location.reload();
+            }
+        }
+
+        function fireConfetti() {
+            const count = 200;
+            const defaults = { origin: { y: 0.7 } };
+            function fire(particleRatio, opts) {
+                confetti(Object.assign({}, defaults, opts, {
+                    particleCount: Math.floor(count * particleRatio)
+                }));
+            }
+            fire(0.25, { spread: 26, startVelocity: 55 });
+            fire(0.2, { spread: 60 });
+            fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+            fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+            fire(0.1, { spread: 120, startVelocity: 45 });
+        }
+    </script>
+</body>
+
+</html>
